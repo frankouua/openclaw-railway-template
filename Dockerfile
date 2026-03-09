@@ -85,7 +85,34 @@ RUN apt-get update \
     procps \
     python3 \
     build-essential \
+    # Chromium headless + deps
+    chromium \
+    chromium-sandbox \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libnss3 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    # VNC + noVNC for remote desktop access
+    x11vnc \
+    xvfb \
+    fluxbox \
+    novnc \
+    websockify \
   && rm -rf /var/lib/apt/lists/*
+
+# Set Chromium env vars for Puppeteer/Playwright
+ENV CHROME_BIN=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage --disable-gpu"
 
 WORKDIR /app
 
@@ -121,6 +148,8 @@ ENV HOMEBREW_REPOSITORY="/home/linuxbrew/.linuxbrew/Homebrew"
 
 ENV PORT=8080
 EXPOSE 8080
+# noVNC web client port
+EXPOSE 6080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD curl -f http://localhost:8080/setup/healthz || exit 1
