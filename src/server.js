@@ -1414,6 +1414,15 @@ app.use(async (req, res) => {
   return proxy.web(req, res, { target: GATEWAY_TARGET });
 });
 
+// noVNC proxy — access remote desktop via /vnc (password-protected same as /setup)
+const vncProxy = httpProxy.createProxyServer({ target: "http://127.0.0.1:6080", ws: true });
+vncProxy.on("error", () => {});
+
+app.use("/vnc", requireSetupAuth, (req, res) => {
+  req.url = req.originalUrl.replace(/^\/vnc/, "") || "/";
+  vncProxy.web(req, res, { target: "http://127.0.0.1:6080" });
+});
+
 const server = app.listen(PORT, () => {
   console.log(`[wrapper] listening on port ${PORT}`);
   console.log(`[wrapper] setup wizard: http://localhost:${PORT}/setup`);
@@ -1454,6 +1463,12 @@ const tuiWss = createTuiWebSocketServer(server);
 
 server.on("upgrade", async (req, socket, head) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  // noVNC WebSocket proxy
+  if (url.pathname.startsWith("/vnc/websockify")) {
+    vncProxy.ws(req, socket, head, { target: "http://127.0.0.1:6080" });
+    return;
+  }
 
   if (url.pathname === "/tui/ws") {
     if (!ENABLE_WEB_TUI) {
